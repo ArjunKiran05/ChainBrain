@@ -81,12 +81,40 @@ export interface Project {
   devDependencies: Record<string, string>;
 }
 
+export interface DependencyNode {
+  name: string;
+  version: string;
+  direct: boolean;
+  dev: boolean;
+  depth: number;
+  dependencies: string[];
+  dependents: string[];
+  vulnerabilities: Vulnerability[];
+}
+
+export interface DependencyEdge {
+  from: string;
+  to: string;
+}
+
+export interface DependencyGraphData {
+  nodes: DependencyNode[];
+  edges: DependencyEdge[];
+}
+
+export interface ProjectDependencyGraph {
+  project: string;
+  graph: DependencyGraphData;
+}
+
 export interface UploadResponse {
   status: string;
 
   extractPath: string;
 
   projects: Project[];
+
+  dependencyGraphs?: ProjectDependencyGraph[];
 
   scanResults: ScanResults;
 

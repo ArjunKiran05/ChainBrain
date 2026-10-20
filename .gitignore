@@ -9,6 +9,9 @@ build/
 .env
 .env.*
 
+#agents
+.agents
+
 # Logs
 *.log
 npm-debug.log*

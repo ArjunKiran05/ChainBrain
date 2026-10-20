@@ -77,6 +77,18 @@ const DashboardHero = () => {
 
         <div className="flex items-center gap-3">
           <Link
+            to="/simulator"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white rounded-full font-bold text-xs shadow-lg shadow-rose-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            title="Launch interactive attack propagation simulation"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
+            <span>Simulate Attack Path</span>
+          </Link>
+
+          <Link
             to="/"
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-full font-bold text-xs transition-all shadow-sm"
           >

@@ -38,6 +38,19 @@ const DashboardNavbar = () => {
 
         {/* Right Side Controls */}
         <div className="flex items-center gap-2.5">
+          {/* Attack Simulator Launch Button */}
+          <Link
+            to="/simulator"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 hover:from-rose-500 hover:to-amber-400 shadow-lg shadow-rose-600/25 hover:shadow-rose-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            title="Launch Real-Time Dependency Attack Simulator"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
+            <span>Attack Simulator</span>
+          </Link>
+
           <ThemeToggle />
 
           <Link

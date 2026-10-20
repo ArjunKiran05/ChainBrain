@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
+import AttackSimulatorPage from "./pages/AttackSimulatorPage";
 
 function App() {
   return (
@@ -11,6 +12,11 @@ function App() {
       <Route
         path="/dashboard"
         element={<DashboardPage />}
+      />
+
+      <Route
+        path="/simulator"
+        element={<AttackSimulatorPage />}
       />
     </Routes>
   );
