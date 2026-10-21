@@ -1,7 +1,7 @@
 export interface AiReport {
   overallAssessment: string;
 
-  deploymentRecommendation?: 'SAFE' | 'CAUTION' | 'BLOCK' | string;
+  deploymentRecommendation?: 'SAFE' | 'CAUTION' | 'BLOCK';
 
   keyFindings: string[];
 
@@ -14,4 +14,4 @@ export interface AiReport {
   }[];
 
   conclusion: string;
-}
+}

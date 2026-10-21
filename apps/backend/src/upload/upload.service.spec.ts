@@ -5,6 +5,7 @@ import { RiskService } from '../risk/risk.service';
 import { RecommendationService } from '../recommendation/recommendation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { DependencyGraphService } from '../dependency/dependency.service';
 
 describe('UploadService', () => {
   let service: UploadService;
@@ -17,7 +18,16 @@ describe('UploadService', () => {
         { provide: RiskService, useValue: { calculate: jest.fn() } },
         { provide: RecommendationService, useValue: { generate: jest.fn() } },
         { provide: PrismaService, useValue: { scan: { create: jest.fn() } } },
-        { provide: AiService, useValue: { generateReport: jest.fn(), chat: jest.fn() } },
+        {
+          provide: AiService,
+          useValue: { generateReport: jest.fn(), chat: jest.fn() },
+        },
+        {
+          provide: DependencyGraphService,
+          useValue: {
+            build: jest.fn().mockResolvedValue({ nodes: [], edges: [] }),
+          },
+        },
       ],
     }).compile();
 

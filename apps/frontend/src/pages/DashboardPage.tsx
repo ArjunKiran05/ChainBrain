@@ -5,7 +5,6 @@ import DashboardHero from "../components/dashboard/overview/DashboardHero";
 import AISummary from "../components/dashboard/ai/AISummary";
 import RecentProjects from "../components/dashboard/projects/RecentProjects";
 
-import DependencyGraph from "../components/dashboard/graph/DependencyGraph";
 import DependencyTable from "../components/dashboard/dependencies/DependencyTable";
 
 import FutureFeatures from "../components/dashboard/future/FutureFeatures";
@@ -32,12 +31,6 @@ const DashboardPage = () => {
         <RiskDistributionChart />
 
         <SeverityChart />
-
-      </div>
-
-      <div className="mt-10">
-
-        <DependencyGraph />
 
       </div>
 

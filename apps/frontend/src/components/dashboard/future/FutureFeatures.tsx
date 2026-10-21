@@ -34,7 +34,7 @@ const FutureFeatures = () => {
           title="Dependency Graph"
           icon={<Boxes className="w-6 h-6" />}
           badge="Visualizer"
-          onClick={() => navigate("/simulator")}
+          onClick={() => navigate("/visualizer")}
         />
 
         <FeatureCard

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ParserService {
-  async extract(zipPath: string) {
+  extract(zipPath: string) {
     return {
       message: 'ZIP received',
       path: zipPath,

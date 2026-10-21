@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { useScanStore } from "../../../store/useScanStore";
+import type { Vulnerability } from "../../../types/upload";
 
 const SeverityChart = () => {
   const results = useScanStore(
@@ -22,7 +23,7 @@ const SeverityChart = () => {
   let low = 0;
 
   results.forEach((pkg) => {
-    pkg.vulnerabilities?.forEach((v: any) => {
+    pkg.vulnerabilities?.forEach((v: Vulnerability) => {
       const s =
         v.database_specific?.severity?.toUpperCase() ??
         "LOW";

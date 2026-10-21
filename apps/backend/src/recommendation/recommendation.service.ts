@@ -17,15 +17,9 @@ export class RecommendationService {
             vuln.database_specific?.severity ?? 'LOW'
           ).toUpperCase();
 
-          const order = [
-            'LOW',
-            'MEDIUM',
-            'HIGH',
-            'CRITICAL',
-          ];
+          const order = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
-          return order.indexOf(severity) >
-            order.indexOf(highest)
+          return order.indexOf(severity) > order.indexOf(highest)
             ? severity
             : highest;
         },
@@ -50,8 +44,7 @@ export class RecommendationService {
 
     recommendations.sort((a, b) => {
       return (
-        (severityOrder[b.severity] ?? 0) -
-        (severityOrder[a.severity] ?? 0)
+        (severityOrder[b.severity] ?? 0) - (severityOrder[a.severity] ?? 0)
       );
     });
 

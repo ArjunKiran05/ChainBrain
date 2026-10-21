@@ -18,6 +18,11 @@ function App() {
         path="/simulator"
         element={<AttackSimulatorPage />}
       />
+
+      <Route
+        path="/visualizer"
+        element={<AttackSimulatorPage />}
+      />
     </Routes>
   );
 }

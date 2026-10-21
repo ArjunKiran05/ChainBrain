@@ -92,6 +92,13 @@ export const ChatAssistant = () => {
         content: m.content,
       }));
 
+      // Filter to packages with vulnerabilities to keep payload light, performant, and under size limits
+      const vulnerableResults = scanResult?.scanResults?.results
+        ? scanResult.scanResults.results
+            .filter((r) => r.vulnerabilities && r.vulnerabilities.length > 0)
+            .slice(0, 50)
+        : [];
+
       const reply = await sendChatMessage({
         message: textToSend,
         history,
@@ -99,8 +106,11 @@ export const ChatAssistant = () => {
           ? {
               projectName,
               summary: scanResult.scanResults.summary,
-              results: scanResult.scanResults.results,
-              recommendations: scanResult.recommendations,
+              results:
+                vulnerableResults.length > 0
+                  ? vulnerableResults
+                  : scanResult.scanResults.results.slice(0, 20),
+              recommendations: scanResult.recommendations?.slice(0, 20),
               aiReport: scanResult.aiReport,
             }
           : undefined,
@@ -114,7 +124,7 @@ export const ChatAssistant = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (err) {
+    } catch {
       const errorMessage: ChatMessageType = {
         id: `err-${Date.now()}`,
         role: "assistant",

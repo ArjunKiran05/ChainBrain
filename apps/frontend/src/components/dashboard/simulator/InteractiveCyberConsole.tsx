@@ -97,7 +97,7 @@ Defense State: ${isPatched ? "SHIELDED / SEVERED" : "UNPATCHED / EXPLOITABLE"}`,
         });
         break;
 
-      case "trace":
+      case "trace": {
         const trace = upwardChain
           .map(
             (h, idx) =>
@@ -111,6 +111,7 @@ Defense State: ${isPatched ? "SHIELDED / SEVERED" : "UNPATCHED / EXPLOITABLE"}`,
           text: `[UPWARD CALL STACK TRACE]\n${trace}`,
         });
         break;
+      }
 
       case "blast-radius":
         onAddLog({

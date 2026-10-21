@@ -14,8 +14,7 @@ export class AiService {
   private readonly omniRouteUrl =
     process.env.OMNIROUTE_URL || 'http://127.0.0.1:20128/v1';
 
-  private readonly aiModel =
-    process.env.AI_MODEL || 'chainbrain-ai';
+  private readonly aiModel = process.env.AI_MODEL || 'chainbrain-ai';
 
   /**
    * Authentication/configuration used for all OmniRoute API requests.
@@ -47,9 +46,7 @@ export class AiService {
     const { summary, results, recommendations } = data;
 
     const vulnerablePackages = results
-      .filter(
-        (pkg) => pkg.vulnerabilities && pkg.vulnerabilities.length > 0,
-      )
+      .filter((pkg) => pkg.vulnerabilities && pkg.vulnerabilities.length > 0)
       .map((pkg) => ({
         package: pkg.package,
         version: pkg.version,
@@ -167,18 +164,13 @@ Return EXACTLY this schema:
 
       return JSON.parse(text) as AiReport;
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : String(err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
 
       this.logger.warn(
         `OmniRoute report generation failed or unavailable: ${errorMessage}. Using fallback engine.`,
       );
 
-      return this.generateFallbackReport(
-        summary,
-        results,
-        recommendations,
-      );
+      return this.generateFallbackReport(summary, results, recommendations);
     }
   }
 
@@ -189,12 +181,7 @@ Return EXACTLY this schema:
       return this.chatWithoutContext(message, history);
     }
 
-    const {
-      summary,
-      results,
-      recommendations,
-      projectName,
-    } = context;
+    const { summary, results, recommendations, projectName } = context;
 
     const vulnerablePackages = results.filter(
       (r) => r.vulnerabilities?.length > 0,
@@ -208,15 +195,14 @@ You are helping a developer inspect and remediate vulnerabilities in their proje
 
 ================ PROJECT SCAN CONTEXT ================
 - Security Score: ${summary?.securityScore ?? 'N/A'}/100
-- Risk Level: ${summary?.riskLevel ?? 'N/A'} (Risk Score: ${summary?.riskScore ?? 'N/A'
-      }/100)
-- Total Dependencies: ${summary?.totalPackages ?? results.length
-      }
-- Vulnerable Packages: ${summary?.vulnerablePackages ??
-      vulnerablePackages.length
-      }
-- Total CVEs/Vulnerabilities: ${summary?.totalVulnerabilities ?? 0
-      }
+- Risk Level: ${summary?.riskLevel ?? 'N/A'} (Risk Score: ${
+      summary?.riskScore ?? 'N/A'
+    }/100)
+- Total Dependencies: ${summary?.totalPackages ?? results.length}
+- Vulnerable Packages: ${
+      summary?.vulnerablePackages ?? vulnerablePackages.length
+    }
+- Total CVEs/Vulnerabilities: ${summary?.totalVulnerabilities ?? 0}
 - Severity Breakdown:
   Critical (${summary?.severityCounts?.critical ?? 0}),
   High (${summary?.severityCounts?.high ?? 0}),
@@ -224,32 +210,34 @@ You are helping a developer inspect and remediate vulnerabilities in their proje
   Low (${summary?.severityCounts?.low ?? 0})
 
 Top Vulnerable Packages:
-${vulnerablePackages
-        .slice(0, 10)
-        .map(
-          (p) =>
-            `- ${p.package}@${p.version}: ${p.vulnerabilities.length} vulnerabilities (${p.vulnerabilities
-              .map(
-                (v) =>
-                  v.id ||
-                  v.database_specific?.severity ||
-                  v.ecosystem_specific?.severity ||
-                  'UNKNOWN',
-              )
-              .join(', ')})`,
-        )
-        .join('\n') || 'None (Clean project)'
-      }
+${
+  vulnerablePackages
+    .slice(0, 10)
+    .map(
+      (p) =>
+        `- ${p.package}@${p.version}: ${p.vulnerabilities.length} vulnerabilities (${p.vulnerabilities
+          .map(
+            (v) =>
+              v.id ||
+              v.database_specific?.severity ||
+              v.ecosystem_specific?.severity ||
+              'UNKNOWN',
+          )
+          .join(', ')})`,
+    )
+    .join('\n') || 'None (Clean project)'
+}
 
 Recommended Actions:
-${(recommendations || [])
-        .slice(0, 5)
-        .map(
-          (rec) =>
-            `- Upgrade ${rec.package} (${rec.version}): ${rec.fix} [Severity: ${rec.severity}] - Reason: ${rec.reason}`,
-        )
-        .join('\n') || 'No immediate fixes needed.'
-      }
+${
+  (recommendations || [])
+    .slice(0, 5)
+    .map(
+      (rec) =>
+        `- Upgrade ${rec.package} (${rec.version}): ${rec.fix} [Severity: ${rec.severity}] - Reason: ${rec.reason}`,
+    )
+    .join('\n') || 'No immediate fixes needed.'
+}
 
 ================ INSTRUCTIONS ================
 1. Answer the user's question clearly, concisely, and practically with security engineering expertise.
@@ -261,8 +249,7 @@ ${(recommendations || [])
     const conversationPrompt = [
       contextPrompt,
       ...history.map(
-        (h) =>
-          `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`,
+        (h) => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`,
       ),
       `User: ${message}`,
       'Assistant:',
@@ -291,8 +278,7 @@ ${(recommendations || [])
 
       throw new Error('OmniRoute returned an empty response');
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : String(err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
 
       this.logger.warn(
         `OmniRoute chat failed or unavailable: ${errorMessage}. Using heuristic fallback.`,
@@ -304,7 +290,7 @@ ${(recommendations || [])
 
   private chatWithoutContext(
     message: string,
-    history: Array<{ role: string; content: string }>,
+    history: Array<{ role: string; content: string }> = [],
   ): string {
     const lower = message.toLowerCase();
 
@@ -316,6 +302,10 @@ ${(recommendations || [])
       return `👋 **Hello! I'm ChainBrain AI Security Assistant.**
 
 Upload a project ZIP to let me analyze your dependencies and help you detect CVEs, review risk levels, and guide you through secure upgrades.`;
+    }
+
+    if (history.length > 0 && lower.includes('thank')) {
+      return `You're welcome! Let me know if you need any more dependency security or vulnerability analysis.`;
     }
 
     return `Please scan or upload a project first so I can provide customized security remediation advice and analyze your specific dependency tree.`;
@@ -334,9 +324,7 @@ Upload a project ZIP to let me analyze your dependencies and help you detect CVE
       projectName,
     } = context || {};
 
-    const vulnerable = results.filter(
-      (r) => r.vulnerabilities?.length > 0,
-    );
+    const vulnerable = results.filter((r) => r.vulnerabilities?.length > 0);
 
     // 1. Is it safe to deploy?
     if (
@@ -346,8 +334,7 @@ Upload a project ZIP to let me analyze your dependencies and help you detect CVE
       lower.includes('release')
     ) {
       const isBlock =
-        summary?.riskLevel === 'CRITICAL' ||
-        summary?.riskLevel === 'HIGH';
+        summary?.riskLevel === 'CRITICAL' || summary?.riskLevel === 'HIGH';
 
       const status = isBlock
         ? '🚨 **Deployment Block Recommended**'
@@ -360,28 +347,33 @@ Upload a project ZIP to let me analyze your dependencies and help you detect CVE
 **Project Security Posture:**
 - **Security Score:** \`${summary?.securityScore ?? 0}/100\`
 - **Risk Level:** **${summary?.riskLevel ?? 'UNKNOWN'}**
-- **Vulnerabilities:** ${summary?.totalVulnerabilities ?? 0
-        } found across ${vulnerable.length} packages (${summary?.severityCounts?.critical ?? 0
-        } Critical, ${summary?.severityCounts?.high ?? 0} High).
+- **Vulnerabilities:** ${
+        summary?.totalVulnerabilities ?? 0
+      } found across ${vulnerable.length} packages (${
+        summary?.severityCounts?.critical ?? 0
+      } Critical, ${summary?.severityCounts?.high ?? 0} High).
 
-${isBlock
-          ? `### Why deployment should be held:
-You have **${(summary?.severityCounts?.critical ?? 0) +
-          (summary?.severityCounts?.high ?? 0)
-          }** high/critical vulnerabilities. Exploits in these dependencies could compromise runtime integrity or expose user data.
+${
+  isBlock
+    ? `### Why deployment should be held:
+You have **${
+        (summary?.severityCounts?.critical ?? 0) +
+        (summary?.severityCounts?.high ?? 0)
+      }** high/critical vulnerabilities. Exploits in these dependencies could compromise runtime integrity or expose user data.
 
 ### Immediate Action Plan:
 \`\`\`bash
 # Apply prioritized fixes
-${recommendations
-            .slice(0, 3)
-            .map((r) => `npm install ${r.package}@latest`)
-            .join('\n') || 'npm audit fix'
-          }
+${
+  recommendations
+    .slice(0, 3)
+    .map((r) => `npm install ${r.package}@latest`)
+    .join('\n') || 'npm audit fix'
+}
 \`\`\`
 `
-          : `Your dependency risk profile is within acceptable boundaries. Continue monitoring for newly disclosed CVEs.`
-        }`;
+    : `Your dependency risk profile is within acceptable boundaries. Continue monitoring for newly disclosed CVEs.`
+}`;
     }
 
     // 2. Explain top critical/high vulnerabilities
@@ -393,19 +385,24 @@ ${recommendations
       lower.includes('vulnerabilit')
     ) {
       if (vulnerable.length === 0) {
-        return `🎉 **Great news!** No known vulnerable packages were detected in **${projectName || 'your project'
-          }**. Your dependency tree scored **${summary?.securityScore ?? 100
-          }/100**.`;
+        return `🎉 **Great news!** No known vulnerable packages were detected in **${
+          projectName || 'your project'
+        }**. Your dependency tree scored **${
+          summary?.securityScore ?? 100
+        }/100**.`;
       }
 
       const topPkgs = vulnerable.slice(0, 4);
 
-      let reply = `### 🔍 Analysis of Detected Vulnerabilities in **${projectName || 'this project'
-        }**\n\n`;
+      let reply = `### 🔍 Analysis of Detected Vulnerabilities in **${
+        projectName || 'this project'
+      }**\n\n`;
 
-      reply += `We detected **${summary?.totalVulnerabilities ?? 0
-        }** total vulnerabilities across **${vulnerable.length
-        }** dependencies.\n\n`;
+      reply += `We detected **${
+        summary?.totalVulnerabilities ?? 0
+      }** total vulnerabilities across **${
+        vulnerable.length
+      }** dependencies.\n\n`;
 
       topPkgs.forEach((pkg, index) => {
         const severities = pkg.vulnerabilities
@@ -450,14 +447,15 @@ ${recommendations
 
       return `### 🛠️ Recommended Remediation Steps
 
-Here are the prioritized commands to resolve the highest risk vulnerabilities in **${projectName || 'your project'
-        }**:
+Here are the prioritized commands to resolve the highest risk vulnerabilities in **${
+        projectName || 'your project'
+      }**:
 
 \`\`\`bash
 # 1. Update critical and high risk packages
 ${recommendations
-          .map((r) => `npm install ${r.package}@latest  # ${r.fix}`)
-          .join('\n')}
+  .map((r) => `npm install ${r.package}@latest  # ${r.fix}`)
+  .join('\n')}
 
 # 2. Run automated audit remediation
 npm audit fix
@@ -485,14 +483,15 @@ Status: ✅ **Secure** - No known vulnerabilities were reported for this package
 
 - **Vulnerabilities Count:** ${matchedPkg.vulnerabilities.length}
 - **Advisories:** ${matchedPkg.vulnerabilities
-          .map(
-            (v) =>
-              `\`${v.id || 'Advisory'}\` (${v.database_specific?.severity ||
+        .map(
+          (v) =>
+            `\`${v.id || 'Advisory'}\` (${
+              v.database_specific?.severity ||
               v.ecosystem_specific?.severity ||
               'Severity N/A'
-              })`,
-          )
-          .join(', ')}
+            })`,
+        )
+        .join(', ')}
 
 **Recommended Action:**
 \`\`\`bash
@@ -503,15 +502,13 @@ Verify breaking changes in the package release notes before deploying.`;
     }
 
     // Generic helpful overview
-    return `### 🧠 Security Summary for **${projectName || 'Current Project'
-      }**
+    return `### 🧠 Security Summary for **${projectName || 'Current Project'}**
 
-- **Overall Health Score:** **${summary?.securityScore ?? 'N/A'
-      }/100** (Risk Level: \`${summary?.riskLevel ?? 'N/A'}\`)
-- **Total Packages:** ${summary?.totalPackages ?? results.length
-      }
-- **Vulnerable Packages:** ${summary?.vulnerablePackages ?? vulnerable.length
-      }
+- **Overall Health Score:** **${
+      summary?.securityScore ?? 'N/A'
+    }/100** (Risk Level: \`${summary?.riskLevel ?? 'N/A'}\`)
+- **Total Packages:** ${summary?.totalPackages ?? results.length}
+- **Vulnerable Packages:** ${summary?.vulnerablePackages ?? vulnerable.length}
 
 **Suggested Questions you can ask:**
 - *"Is this project safe to deploy to production?"*
@@ -529,11 +526,9 @@ Verify breaking changes in the package release notes before deploying.`;
       (pkg) => pkg.vulnerabilities && pkg.vulnerabilities.length > 0,
     );
 
-    const criticalCount =
-      summary.severityCounts?.critical ?? 0;
+    const criticalCount = summary.severityCounts?.critical ?? 0;
 
-    const highCount =
-      summary.severityCounts?.high ?? 0;
+    const highCount = summary.severityCounts?.high ?? 0;
 
     let deployRec: 'SAFE' | 'CAUTION' | 'BLOCK' = 'SAFE';
 
@@ -556,41 +551,39 @@ Verify breaking changes in the package release notes before deploying.`;
       keyFindings: [
         `Identified ${summary.vulnerablePackages} vulnerable package(s) containing ${summary.totalVulnerabilities} total known vulnerabilities.`,
 
-        `Severity distribution: ${criticalCount} Critical, ${highCount} High, ${summary.severityCounts?.medium ?? 0
-        } Medium, ${summary.severityCounts?.low ?? 0
-        } Low advisories.`,
+        `Severity distribution: ${criticalCount} Critical, ${highCount} High, ${
+          summary.severityCounts?.medium ?? 0
+        } Medium, ${summary.severityCounts?.low ?? 0} Low advisories.`,
 
         vulnerable.length > 0
           ? `Highest risk exposure stems from ${vulnerable
-            .slice(0, 2)
-            .map((v) => v.package)
-            .join(' and ')}.`
+              .slice(0, 2)
+              .map((v) => v.package)
+              .join(' and ')}.`
           : `All scanned packages currently meet baseline vulnerability hygiene standards.`,
       ],
 
       recommendations:
         recommendations.length > 0
           ? recommendations
-            .slice(0, 3)
-            .map(
-              (r) =>
-                `Upgrade ${r.package}@${r.version} to patched version (${r.fix})`,
-            )
+              .slice(0, 3)
+              .map(
+                (r) =>
+                  `Upgrade ${r.package}@${r.version} to patched version (${r.fix})`,
+              )
           : [
-            'Maintain continuous dependency scanning during CI/CD builds.',
-            'Keep lockfiles pinned and automated dependency updates enabled.',
-            'Regularly audit newly added third-party packages.',
-          ],
+              'Maintain continuous dependency scanning during CI/CD builds.',
+              'Keep lockfiles pinned and automated dependency updates enabled.',
+              'Regularly audit newly added third-party packages.',
+            ],
 
-      priorityPackages: recommendations
-        .slice(0, 5)
-        .map((r) => ({
-          package: r.package,
-          severity: r.severity,
-          reason:
-            r.reason ||
-            `Vulnerability detected in installed version ${r.version}.`,
-        })),
+      priorityPackages: recommendations.slice(0, 5).map((r) => ({
+        package: r.package,
+        severity: r.severity,
+        reason:
+          r.reason ||
+          `Vulnerability detected in installed version ${r.version}.`,
+      })),
 
       conclusion:
         'Review critical CVEs and upgrade identified vulnerable dependencies before promoting to production environments.',

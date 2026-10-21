@@ -8,11 +8,12 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import SeverityBadge from "./SeverityBadge";
+import type { Vulnerability } from "../../../types/upload";
 
 interface DependencyRowProps {
   packageName: string;
   version: string;
-  vulnerabilities: any[];
+  vulnerabilities: Vulnerability[];
 }
 
 const DependencyRow = ({
@@ -112,7 +113,7 @@ const DependencyRow = ({
                 </code>
               </div>
 
-              {vulnerabilities.map((vulnerability: any, index: number) => (
+              {vulnerabilities.map((vulnerability: Vulnerability, index: number) => (
                 <div
                   key={index}
                   className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm"

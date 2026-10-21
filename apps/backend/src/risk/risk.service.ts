@@ -32,25 +32,18 @@ export class RiskService {
     let low = 0;
 
     for (const pkg of results) {
-      const packageKey =
-        this.nodeKey(
-          pkg.package,
-          pkg.version,
-        );
+      const packageKey = this.nodeKey(pkg.package, pkg.version);
 
       uniquePackages.add(packageKey);
 
-      if (
-        pkg.vulnerabilities.length > 0
-      ) {
+      if (pkg.vulnerabilities.length > 0) {
         vulnerablePackages++;
       }
 
       for (const vuln of pkg.vulnerabilities) {
         totalVulnerabilities++;
 
-        const severity =
-          this.getSeverity(vuln);
+        const severity = this.getSeverity(vuln);
 
         switch (severity) {
           case 'CRITICAL':
@@ -72,34 +65,19 @@ export class RiskService {
       }
     }
 
-    const totalPackages =
-      uniquePackages.size;
+    const totalPackages = uniquePackages.size;
 
-    const securePackages =
-      Math.max(
-        0,
-        totalPackages -
-          vulnerablePackages,
-      );
+    const securePackages = Math.max(0, totalPackages - vulnerablePackages);
 
     /*
      * ----------------------------------------------------------
      * STEP 2: Create vulnerability lookup
      * ----------------------------------------------------------
      */
-    const scanMap = new Map<
-      string,
-      ScanResult
-    >();
+    const scanMap = new Map<string, ScanResult>();
 
     for (const result of results) {
-      scanMap.set(
-        this.nodeKey(
-          result.package,
-          result.version,
-        ),
-        result,
-      );
+      scanMap.set(this.nodeKey(result.package, result.version), result);
     }
 
     /*
@@ -109,26 +87,13 @@ export class RiskService {
      */
     const nodeRisks: number[] = [];
 
-    for (
-      const projectGraph of dependencyGraphs
-    ) {
-      const graph =
-        projectGraph.graph;
+    for (const projectGraph of dependencyGraphs) {
+      const graph = projectGraph.graph;
 
-      const graphNodeMap =
-        new Map<
-          string,
-          DependencyNode
-        >();
+      const graphNodeMap = new Map<string, DependencyNode>();
 
       for (const node of graph.nodes) {
-        graphNodeMap.set(
-          this.nodeKey(
-            node.name,
-            node.version,
-          ),
-          node,
-        );
+        graphNodeMap.set(this.nodeKey(node.name, node.version), node);
       }
 
       /*
@@ -137,26 +102,18 @@ export class RiskService {
        * This helps us estimate how much of the application
        * directly depends on a vulnerable node.
        */
-      const directDependencyCount =
-        graph.nodes.filter(
-          (node) => node.direct,
-        ).length;
+      const directDependencyCount = graph.nodes.filter(
+        (node) => node.direct,
+      ).length;
 
       for (const node of graph.nodes) {
-        if (
-          node.vulnerabilities.length === 0
-        ) {
+        if (node.vulnerabilities.length === 0) {
           continue;
         }
 
-        const key =
-          this.nodeKey(
-            node.name,
-            node.version,
-          );
+        const key = this.nodeKey(node.name, node.version);
 
-        const scanResult =
-          scanMap.get(key);
+        const scanResult = scanMap.get(key);
 
         /*
          * The graph node already contains vulnerabilities,
@@ -165,12 +122,9 @@ export class RiskService {
          * Use the scan result when available.
          */
         const vulnerabilities =
-          scanResult?.vulnerabilities ??
-          node.vulnerabilities;
+          scanResult?.vulnerabilities ?? node.vulnerabilities;
 
-        if (
-          vulnerabilities.length === 0
-        ) {
+        if (vulnerabilities.length === 0) {
           continue;
         }
 
@@ -181,10 +135,7 @@ export class RiskService {
          * How dangerous are the vulnerabilities themselves?
          * ------------------------------------------------------
          */
-        const intrinsicRisk =
-          this.calculateIntrinsicRisk(
-            vulnerabilities,
-          );
+        const intrinsicRisk = this.calculateIntrinsicRisk(vulnerabilities);
 
         /*
          * ------------------------------------------------------
@@ -193,10 +144,7 @@ export class RiskService {
          * How directly exposed is this dependency?
          * ------------------------------------------------------
          */
-        const exposureFactor =
-          this.calculateExposureFactor(
-            node,
-          );
+        const exposureFactor = this.calculateExposureFactor(node);
 
         /*
          * ------------------------------------------------------
@@ -206,24 +154,18 @@ export class RiskService {
          * depend on this vulnerable package?
          * ------------------------------------------------------
          */
-        const affectedDependents =
-          this.findAffectedDependents(
-            node,
-            graphNodeMap,
-          );
+        const affectedDependents = this.findAffectedDependents(
+          node,
+          graphNodeMap,
+        );
 
-        const directAncestors =
-          this.countDirectAncestors(
-            node,
-            graphNodeMap,
-          );
+        const directAncestors = this.countDirectAncestors(node, graphNodeMap);
 
-        const blastRadiusFactor =
-          this.calculateBlastRadiusFactor(
-            affectedDependents.size,
-            directAncestors,
-            directDependencyCount,
-          );
+        const blastRadiusFactor = this.calculateBlastRadiusFactor(
+          affectedDependents.size,
+          directAncestors,
+          directDependencyCount,
+        );
 
         /*
          * ------------------------------------------------------
@@ -232,9 +174,7 @@ export class RiskService {
          */
         const nodeRisk = Math.min(
           100,
-          intrinsicRisk *
-            exposureFactor *
-            blastRadiusFactor,
+          intrinsicRisk * exposureFactor * blastRadiusFactor,
         );
 
         nodeRisks.push(nodeRisk);
@@ -261,35 +201,24 @@ export class RiskService {
     let combinedRisk = 0;
 
     for (const nodeRisk of nodeRisks) {
-      const normalizedRisk =
-        nodeRisk / 100;
+      const normalizedRisk = nodeRisk / 100;
 
-      combinedRisk =
-        1 -
-        (1 - combinedRisk) *
-          (1 - normalizedRisk);
+      combinedRisk = 1 - (1 - combinedRisk) * (1 - normalizedRisk);
     }
 
     const riskScore = Math.min(
       100,
-      Math.max(
-        0,
-        Math.round(
-          combinedRisk * 100,
-        ),
-      ),
+      Math.max(0, Math.round(combinedRisk * 100)),
     );
 
-    const securityScore =
-      100 - riskScore;
+    const securityScore = 100 - riskScore;
 
     /*
      * ----------------------------------------------------------
      * STEP 5: Risk classification
      * ----------------------------------------------------------
      */
-    let riskLevel:
-      ScanSummary['riskLevel'];
+    let riskLevel: ScanSummary['riskLevel'];
 
     if (riskScore >= 70) {
       riskLevel = 'CRITICAL';
@@ -327,22 +256,11 @@ export class RiskService {
    */
   private getSeverity(
     vulnerability: any,
-  ):
-    | 'CRITICAL'
-    | 'HIGH'
-    | 'MEDIUM'
-    | 'LOW' {
-    const databaseSeverity =
-      vulnerability
-        ?.database_specific
-        ?.severity;
+  ): 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' {
+    const databaseSeverity = vulnerability?.database_specific?.severity;
 
-    if (
-      typeof databaseSeverity ===
-      'string'
-    ) {
-      const normalized =
-        databaseSeverity.toUpperCase();
+    if (typeof databaseSeverity === 'string') {
+      const normalized = databaseSeverity.toUpperCase();
 
       switch (normalized) {
         case 'CRITICAL':
@@ -360,17 +278,10 @@ export class RiskService {
       }
     }
 
-    const ecosystemSeverity =
-      vulnerability
-        ?.ecosystem_specific
-        ?.severity;
+    const ecosystemSeverity = vulnerability?.ecosystem_specific?.severity;
 
-    if (
-      typeof ecosystemSeverity ===
-      'string'
-    ) {
-      const normalized =
-        ecosystemSeverity.toUpperCase();
+    if (typeof ecosystemSeverity === 'string') {
+      const normalized = ecosystemSeverity.toUpperCase();
 
       switch (normalized) {
         case 'CRITICAL':
@@ -410,16 +321,11 @@ export class RiskService {
    *
    * Multiple vulnerabilities use diminishing returns.
    */
-  private calculateIntrinsicRisk(
-    vulnerabilities: any[],
-  ): number {
+  private calculateIntrinsicRisk(vulnerabilities: any[]): number {
     let combinedRisk = 0;
 
     for (const vulnerability of vulnerabilities) {
-      const severity =
-        this.getSeverity(
-          vulnerability,
-        );
+      const severity = this.getSeverity(vulnerability);
 
       let severityRisk: number;
 
@@ -441,16 +347,10 @@ export class RiskService {
           break;
       }
 
-      combinedRisk =
-        1 -
-        (1 - combinedRisk) *
-          (1 - severityRisk / 100);
+      combinedRisk = 1 - (1 - combinedRisk) * (1 - severityRisk / 100);
     }
 
-    return Math.min(
-      100,
-      combinedRisk * 100,
-    );
+    return Math.min(100, combinedRisk * 100);
   }
 
   /*
@@ -470,36 +370,20 @@ export class RiskService {
    * Greater depth:
    *     slightly reduced exposure
    */
-  private calculateExposureFactor(
-    node: DependencyNode,
-  ): number {
-    let factor =
-      node.direct
-        ? 1.0
-        : 0.82;
+  private calculateExposureFactor(node: DependencyNode): number {
+    let factor = node.direct ? 1.0 : 0.82;
 
     if (node.dev) {
       factor *= 0.55;
     }
 
-    if (
-      node.depth !== Infinity &&
-      node.depth > 1
-    ) {
-      const depthReduction =
-        Math.min(
-          node.depth - 1,
-          5,
-        ) * 0.07;
+    if (node.depth !== Infinity && node.depth > 1) {
+      const depthReduction = Math.min(node.depth - 1, 5) * 0.07;
 
-      factor *=
-        1 - depthReduction;
+      factor *= 1 - depthReduction;
     }
 
-    return Math.max(
-      0.25,
-      factor,
-    );
+    return Math.max(0.25, factor);
   }
 
   /*
@@ -517,66 +401,36 @@ export class RiskService {
    */
   private findAffectedDependents(
     vulnerableNode: DependencyNode,
-    graphNodes: Map<
-      string,
-      DependencyNode
-    >,
+    graphNodes: Map<string, DependencyNode>,
   ): Set<string> {
-    const affected =
-      new Set<string>();
+    const affected = new Set<string>();
 
     const queue: string[] = [];
 
-    for (
-      const dependentKey of
-        vulnerableNode.dependents
-    ) {
-      queue.push(
-        dependentKey,
-      );
+    for (const dependentKey of vulnerableNode.dependents) {
+      queue.push(dependentKey);
     }
 
     let index = 0;
 
-    while (
-      index < queue.length
-    ) {
-      const currentKey =
-        queue[index++];
+    while (index < queue.length) {
+      const currentKey = queue[index++];
 
-      if (
-        affected.has(
-          currentKey,
-        )
-      ) {
+      if (affected.has(currentKey)) {
         continue;
       }
 
-      affected.add(
-        currentKey,
-      );
+      affected.add(currentKey);
 
-      const dependent =
-        graphNodes.get(
-          currentKey,
-        );
+      const dependent = graphNodes.get(currentKey);
 
       if (!dependent) {
         continue;
       }
 
-      for (
-        const nextDependent of
-          dependent.dependents
-      ) {
-        if (
-          !affected.has(
-            nextDependent,
-          )
-        ) {
-          queue.push(
-            nextDependent,
-          );
+      for (const nextDependent of dependent.dependents) {
+        if (!affected.has(nextDependent)) {
+          queue.push(nextDependent);
         }
       }
     }
@@ -594,43 +448,25 @@ export class RiskService {
    */
   private countDirectAncestors(
     vulnerableNode: DependencyNode,
-    graphNodes: Map<
-      string,
-      DependencyNode
-    >,
+    graphNodes: Map<string, DependencyNode>,
   ): number {
-    const visited =
-      new Set<string>();
+    const visited = new Set<string>();
 
-    const queue: string[] = [
-      ...vulnerableNode.dependents,
-    ];
+    const queue: string[] = [...vulnerableNode.dependents];
 
     let count = 0;
     let index = 0;
 
-    while (
-      index < queue.length
-    ) {
-      const currentKey =
-        queue[index++];
+    while (index < queue.length) {
+      const currentKey = queue[index++];
 
-      if (
-        visited.has(
-          currentKey,
-        )
-      ) {
+      if (visited.has(currentKey)) {
         continue;
       }
 
-      visited.add(
-        currentKey,
-      );
+      visited.add(currentKey);
 
-      const currentNode =
-        graphNodes.get(
-          currentKey,
-        );
+      const currentNode = graphNodes.get(currentKey);
 
       if (!currentNode) {
         continue;
@@ -640,18 +476,9 @@ export class RiskService {
         count++;
       }
 
-      for (
-        const dependentKey of
-          currentNode.dependents
-      ) {
-        if (
-          !visited.has(
-            dependentKey,
-          )
-        ) {
-          queue.push(
-            dependentKey,
-          );
+      for (const dependentKey of currentNode.dependents) {
+        if (!visited.has(dependentKey)) {
+          queue.push(dependentKey);
         }
       }
     }
@@ -683,32 +510,19 @@ export class RiskService {
     directAncestors: number,
     totalDirectDependencies: number,
   ): number {
-    const dependentImpact =
-      Math.min(
-        0.60,
-        Math.log2(
-          affectedDependents + 1,
-        ) * 0.10,
-      );
+    const dependentImpact = Math.min(
+      0.6,
+      Math.log2(affectedDependents + 1) * 0.1,
+    );
 
     const directCoverage =
       totalDirectDependencies > 0
-        ? directAncestors /
-          totalDirectDependencies
+        ? directAncestors / totalDirectDependencies
         : 0;
 
-    const coverageImpact =
-      Math.min(
-        0.35,
-        directCoverage * 0.35,
-      );
+    const coverageImpact = Math.min(0.35, directCoverage * 0.35);
 
-    return Math.min(
-      1.85,
-      1 +
-        dependentImpact +
-        coverageImpact,
-    );
+    return Math.min(1.85, 1 + dependentImpact + coverageImpact);
   }
 
   /*
@@ -716,10 +530,7 @@ export class RiskService {
    * PACKAGE KEY
    * ==========================================================
    */
-  private nodeKey(
-    name: string,
-    version: string,
-  ): string {
+  private nodeKey(name: string, version: string): string {
     return `${name}@${version}`;
   }
 }

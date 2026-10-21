@@ -7,7 +7,9 @@ const getAudioContext = (): AudioContext | null => {
   if (typeof window === "undefined") return null;
   if (!audioCtx) {
     const AudioContextClass =
-      window.AudioContext || (window as any).webkitAudioContext;
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
     if (AudioContextClass) {
       audioCtx = new AudioContextClass();
     }
@@ -93,7 +95,9 @@ export const playHopSound = (severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | 
 
     osc.start();
     osc.stop(ctx.currentTime + 0.12);
-  } catch {}
+  } catch {
+    // Audio playback blocked or unsupported
+  }
 };
 
 // Breach Hazard Alarm
@@ -118,7 +122,9 @@ export const playBreachAlarm = () => {
 
     osc.start();
     osc.stop(ctx.currentTime + 0.35);
-  } catch {}
+  } catch {
+    // Audio playback blocked or unsupported
+  }
 };
 
 // Emerald Defense Shield Activation Chime
@@ -146,5 +152,7 @@ export const playDefenseShieldChime = () => {
       osc.start(startTime);
       osc.stop(startTime + 0.3);
     });
-  } catch {}
+  } catch {
+    // Audio playback blocked or unsupported
+  }
 };

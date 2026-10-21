@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -9,6 +10,9 @@ async function bootstrap() {
     origin: 'http://localhost:5173',
     credentials: true,
   });
+
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   app.useGlobalPipes(new ValidationPipe());
 
@@ -25,4 +29,6 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Bootstrap error:', err);
+});

@@ -59,110 +59,105 @@ export class DependencyGraphService {
    * object when npm had to install a different version deeper
    * in the tree.
    */
-    private buildFromV1(lockfile: any): DependencyGraph {
+  private buildFromV1(lockfile: any): DependencyGraph {
     const nodeMap = new Map<string, DependencyNode>();
     const edges: DependencyEdge[] = [];
 
     const rootDependencies = lockfile.dependencies ?? {};
 
     const visit = (
-        dependencyMap: Record<string, any>,
-        parentKey: string | null,
-        depth: number,
-        direct: boolean,
-        visiting: Set<string>,
+      dependencyMap: Record<string, any>,
+      parentKey: string | null,
+      depth: number,
+      direct: boolean,
+      visiting: Set<string>,
     ): void => {
-        for (const [name, packageInfo] of Object.entries(dependencyMap)) {
+      for (const [name, packageInfo] of Object.entries(dependencyMap)) {
         if (!packageInfo || typeof packageInfo !== 'object') {
-            continue;
+          continue;
         }
 
         const info = packageInfo as {
-            version?: string;
-            dev?: boolean;
-            requires?: Record<string, string>;
-            dependencies?: Record<string, any>;
+          version?: string;
+          dev?: boolean;
+          requires?: Record<string, string>;
+          dependencies?: Record<string, any>;
         };
 
         if (!info.version) {
-            continue;
+          continue;
         }
 
         const key = this.nodeKey(name, info.version);
 
         /*
-        * Create the node if we haven't seen it before.
-        */
+         * Create the node if we haven't seen it before.
+         */
         if (!nodeMap.has(key)) {
-                nodeMap.set(key, {
-                name,
-                version: info.version,
-                direct,
-                dev: info.dev === true,
-                depth,
-                dependencies: [],
-                dependents: [],
-                vulnerabilities: [],
-        });
-        } else {
-            /*
-            * A package can be encountered from multiple parents.
-            * Preserve the strongest information we've found.
-            */
-            const existingNode = nodeMap.get(key)!;
-
-            if (direct) {
-            existingNode.direct = true;
-            }
-
-            if (info.dev === true) {
-            existingNode.dev = true;
-            }
-
-            existingNode.depth = Math.min(
-            existingNode.depth,
+          nodeMap.set(key, {
+            name,
+            version: info.version,
+            direct,
+            dev: info.dev === true,
             depth,
-            );
+            dependencies: [],
+            dependents: [],
+            vulnerabilities: [],
+          });
+        } else {
+          /*
+           * A package can be encountered from multiple parents.
+           * Preserve the strongest information we've found.
+           */
+          const existingNode = nodeMap.get(key)!;
+
+          if (direct) {
+            existingNode.direct = true;
+          }
+
+          if (info.dev === true) {
+            existingNode.dev = true;
+          }
+
+          existingNode.depth = Math.min(existingNode.depth, depth);
         }
 
         /*
-        * Connect parent -> current package.
-        */
+         * Connect parent -> current package.
+         */
         if (parentKey) {
-            const parentNode = nodeMap.get(parentKey);
-            const currentNode = nodeMap.get(key);
+          const parentNode = nodeMap.get(parentKey);
+          const currentNode = nodeMap.get(key);
 
-            if (parentNode && currentNode) {
+          if (parentNode && currentNode) {
             if (!parentNode.dependencies.includes(key)) {
-                parentNode.dependencies.push(key);
+              parentNode.dependencies.push(key);
             }
 
             if (!currentNode.dependents.includes(parentKey)) {
-                currentNode.dependents.push(parentKey);
+              currentNode.dependents.push(parentKey);
             }
 
             const edgeExists = edges.some(
-                (edge) =>
-                edge.from === parentKey &&
-                edge.to === key,
+              (edge) => edge.from === parentKey && edge.to === key,
             );
 
             if (!edgeExists) {
-                edges.push({
+              edges.push({
                 from: parentKey,
                 to: key,
-                });
+              });
             }
-            }
+          }
         }
 
         /*
-        * Prevent cycles such as:
-        *
-        * A -> B -> A -> B -> ...
-        */
+         * Prevent cycles such as:
+         *
+         * A -> B -> A -> B -> ...
+         */
         if (visiting.has(key)) {
-            continue;
+          continue;
         }
 
         const nextVisiting = new Set(visiting);
@@ -172,61 +167,53 @@ export class DependencyGraphService {
         const nestedDependencies = info.dependencies ?? {};
 
         for (const dependencyName of Object.keys(requires)) {
-            /*
-            * First preference:
-            *
-            * Use the exact nested installation recorded by npm.
-            */
-            if (nestedDependencies[dependencyName]) {
+          /*
+           * First preference:
+           *
+           * Use the exact nested installation recorded by npm.
+           */
+          if (nestedDependencies[dependencyName]) {
             visit(
-                {
-                [dependencyName]:
-                    nestedDependencies[dependencyName],
-                },
-                key,
-                depth + 1,
-                false,
-                nextVisiting,
+              {
+                [dependencyName]: nestedDependencies[dependencyName],
+              },
+              key,
+              depth + 1,
+              false,
+              nextVisiting,
             );
 
             continue;
-            }
+          }
 
-            /*
-            * Otherwise use the top-level resolved dependency.
-            *
-            * The cycle protection above prevents infinite recursion.
-            */
-            if (rootDependencies[dependencyName]) {
+          /*
+           * Otherwise use the top-level resolved dependency.
+           *
+           * The cycle protection above prevents infinite recursion.
+           */
+          if (rootDependencies[dependencyName]) {
             visit(
-                {
-                [dependencyName]:
-                    rootDependencies[dependencyName],
-                },
-                key,
-                depth + 1,
-                false,
-                nextVisiting,
+              {
+                [dependencyName]: rootDependencies[dependencyName],
+              },
+              key,
+              depth + 1,
+              false,
+              nextVisiting,
             );
-            }
+          }
         }
-        }
+      }
     };
 
     /*
-    * Start traversal from the root dependencies.
-    */
-    visit(
-        rootDependencies,
-        null,
-        1,
-        true,
-        new Set<string>(),
-    );
+     * Start traversal from the root dependencies.
+     */
+    visit(rootDependencies, null, 1, true, new Set<string>());
 
     return {
-        nodes: Array.from(nodeMap.values()),
-        edges,
+      nodes: Array.from(nodeMap.values()),
+      edges,
     };
   }
 
@@ -248,9 +235,7 @@ export class DependencyGraphService {
      */
     const root = packages[''];
 
-    const directDependencies = new Set(
-      Object.keys(root?.dependencies ?? {}),
-    );
+    const directDependencies = new Set(Object.keys(root?.dependencies ?? {}));
 
     const directDevDependencies = new Set(
       Object.keys(root?.devDependencies ?? {}),
@@ -283,8 +268,7 @@ export class DependencyGraphService {
       }
 
       const direct = directDependencies.has(name);
-      const dev =
-        directDevDependencies.has(name) || info.dev === true;
+      const dev = directDevDependencies.has(name) || info.dev === true;
 
       nodeMap.set(this.nodeKey(name, info.version), {
         name,
@@ -295,7 +279,7 @@ export class DependencyGraphService {
         dependencies: [],
         dependents: [],
         vulnerabilities: [],
-        });
+      });
     }
 
     /*
@@ -330,9 +314,7 @@ export class DependencyGraphService {
         continue;
       }
 
-      for (const dependencyName of Object.keys(
-        info.dependencies ?? {},
-      )) {
+      for (const dependencyName of Object.keys(info.dependencies ?? {})) {
         const dependencyPath = this.findDependencyPath(
           packagePath,
           dependencyName,
@@ -351,10 +333,7 @@ export class DependencyGraphService {
           continue;
         }
 
-        const toKey = this.nodeKey(
-          dependencyName,
-          dependencyInfo.version,
-        );
+        const toKey = this.nodeKey(dependencyName, dependencyInfo.version);
 
         const toNode = nodeMap.get(toKey);
 
@@ -386,11 +365,7 @@ export class DependencyGraphService {
     /*
      * Calculate dependency depth from the root.
      */
-    this.calculateDepths(
-      nodeMap,
-      directDependencies,
-      directDevDependencies,
-    );
+    this.calculateDepths(nodeMap, directDependencies, directDevDependencies);
 
     return {
       nodes: Array.from(nodeMap.values()),
@@ -430,8 +405,7 @@ export class DependencyGraphService {
         return candidate;
       }
 
-      const lastNodeModules =
-        currentPath.lastIndexOf('node_modules/');
+      const lastNodeModules = currentPath.lastIndexOf('node_modules/');
 
       if (lastNodeModules === -1) {
         break;
@@ -440,12 +414,9 @@ export class DependencyGraphService {
       currentPath = currentPath.substring(0, lastNodeModules - 1);
     }
 
-    const topLevelCandidate =
-      `node_modules/${dependencyName}`;
+    const topLevelCandidate = `node_modules/${dependencyName}`;
 
-    return packages[topLevelCandidate]
-      ? topLevelCandidate
-      : null;
+    return packages[topLevelCandidate] ? topLevelCandidate : null;
   }
 
   private calculateDepths(

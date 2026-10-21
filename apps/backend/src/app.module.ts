@@ -11,7 +11,16 @@ import { RecommendationModule } from './recommendation/recommendation.module';
 import { DependencyModule } from './dependency/dependency.module';
 
 @Module({
-  imports: [UploadModule, ParserModule, ScannerModule, PrismaModule, AiModule, RiskModule, RecommendationModule, DependencyModule],
+  imports: [
+    UploadModule,
+    ParserModule,
+    ScannerModule,
+    PrismaModule,
+    AiModule,
+    RiskModule,
+    RecommendationModule,
+    DependencyModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

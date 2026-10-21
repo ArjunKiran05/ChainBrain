@@ -48,6 +48,12 @@ const Navbar = () => {
           >
             Dashboard
           </Link>
+          <Link
+            to="/visualizer"
+            className="hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors"
+          >
+            Visualizer
+          </Link>
         </div>
 
         {/* Right Side Buttons */}
